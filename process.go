@@ -1,6 +1,7 @@
 package fuzzy
 
 import (
+	"container/heap"
 	"errors"
 	"fmt"
 	"sort"
@@ -23,6 +24,18 @@ func (slice MatchPairs) Less(i, j int) bool {
 
 func (slice MatchPairs) Swap(i, j int) {
 	slice[i], slice[j] = slice[j], slice[i]
+}
+
+func (slice *MatchPairs) Push(x interface{}) {
+	*slice = append(*slice, x.(*MatchPair))
+}
+
+func (slice *MatchPairs) Pop() interface{} {
+	old := *slice
+	n := len(old)
+	x := old[n-1]
+	*slice = old[0 : n-1]
+	return x
 }
 
 type alphaLengthSortPairs []*MatchPair
@@ -179,19 +192,19 @@ func bestScoreMatchPair(pairs MatchPairs) (*MatchPair, error) {
 }
 
 func largestKMatchPairs(pairs MatchPairs, k int) MatchPairs {
-	//todo: implement priority queue algorithm
-	sort.Sort(pairs)
+	if k == 0 {
+		return make(MatchPairs, 0)
+	}
 	n := len(pairs)
-	if k > n {
+	if k < 0 || k > n {
 		k = n
 	}
-
-	if k > 0 {
-		return pairs[:k]
-	} else if k < 0 {
-		return pairs
+	result := make(MatchPairs, 0, k)
+	heap.Init(&pairs)
+	for i := 0; i < k; i++ {
+		result = append(result, heap.Pop(&pairs).(*MatchPair))
 	}
-	return make(MatchPairs, 0)
+	return result
 }
 
 func Dedupe(sliceWithDupes []string, args ...interface{}) ([]string, error) {
